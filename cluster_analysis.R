@@ -302,8 +302,6 @@ median_zscores_Mono <- data.frame(
     HV = matrixStats::rowMedians(
         FPKM_Mono_zscores[,(samplesDf_Mono$Class=="HV")])
 )
-dim(median_zscores_Mono)
-# [1] 33  4
 
 
 groups_df <- data.frame(
