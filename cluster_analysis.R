@@ -19,9 +19,7 @@ library(topGO)
 ## Parameters
 ##------------------------------------------------------------------------------
 workingDir <- "./"
-plotsDir <- file.path(workingDir, "plots")
-cc1 <- 12
-set1Pal <- brewer.pal(9, "Set1")
+set1Pal <- brewer.pal(9, "Set1") ## colour palette for plots
 
 
 ##------------------------------------------------------------------------------
@@ -65,15 +63,15 @@ samplesDf_Mono <- read_tsv(file.path("sample_tables","samplesDf_Mono.tsv"))
 
 ## read counts per gene
 gene_counts_NE <- read.table(file.path(
-    "gene_counts","gene_counts_NE.tsv", header=TRUE, fill=TRUE))
+    "gene_counts","gene_counts_NE.tsv"), header=TRUE, fill=TRUE)
 gene_counts_Mono <- read.table(file.path(
-    "gene_counts","gene_counts_Mono.tsv", header=TRUE, fill=TRUE))
+    "gene_counts","gene_counts_Mono.tsv"), header=TRUE, fill=TRUE)
 
 ## FPKM values per gene
 FPKM_NE <- read.table(file.path(
-    "gene_counts","FPKM_NE.tsv", header=TRUE, fill=TRUE))
+    "gene_counts","FPKM_NE.tsv"), header=TRUE, fill=TRUE)
 FPKM_Mono <- read.table(file.path(
-    "gene_counts","FPKM_Mono.tsv", header=TRUE, fill=TRUE))
+    "gene_counts","FPKM_Mono.tsv"), header=TRUE, fill=TRUE)
 
 ## deseq2 results
 res_NE_CF0 <- readRDS(file.path("DESeq2_res","res_NE_CF0.rds"))
@@ -250,11 +248,11 @@ p1 <- ggplot(topGOdf,
         panel.grid.minor = element_blank(),
         panel.background = element_blank(),
         axis.line = element_line(colour = "black"),
-        text = element_text(colour = "black", face = "bold", size = cc1*1.5),
+        text = element_text(colour = "black", face = "bold", size = 18),
         axis.title.y = element_blank(),
         panel.border = element_rect(colour = "black", fill = NA),
-        legend.text = element_text(colour = "black", face="bold", size = cc1*1.5),
-        legend.title = element_text(colour = "black", face="bold",size = cc1*1.5)
+        legend.text = element_text(colour = "black", face="bold", size = 18),
+        legend.title = element_text(colour = "black", face="bold",size = 18)
     )
 
 ggsave(
