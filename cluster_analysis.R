@@ -60,16 +60,20 @@ topGO_enrich <- function(clu_number){
 ## Read in data
 ##------------------------------------------------------------------------------
 ## sample tables
-samplesDf_NE <- read_tsv("samplesDf_NE.tsv")
-samplesDf_Mono <- read_tsv("samplesDf_Mono.tsv")
+samplesDf_NE <- read_tsv(file.path("sample_tables","samplesDf_NE.tsv"))
+samplesDf_Mono <- read_tsv(file.path("sample_tables","samplesDf_Mono.tsv"))
 
 ## read counts per gene
-gene_counts_NE <- read.table("gene_counts_NE.tsv", header=TRUE, fill=TRUE)
-gene_counts_Mono <- read.table("gene_counts_Mono.tsv", header=TRUE, fill=TRUE)
+gene_counts_NE <- read.table(file.path(
+    "gene_counts","gene_counts_NE.tsv", header=TRUE, fill=TRUE))
+gene_counts_Mono <- read.table(file.path(
+    "gene_counts","gene_counts_Mono.tsv", header=TRUE, fill=TRUE))
 
 ## FPKM values per gene
-FPKM_NE <- read.table("FPKM_NE.tsv", header=TRUE, fill=TRUE)
-FPKM_Mono <- read.table("FPKM_Mono.tsv", header=TRUE, fill=TRUE)
+FPKM_NE <- read.table(file.path(
+    "gene_counts","FPKM_NE.tsv", header=TRUE, fill=TRUE))
+FPKM_Mono <- read.table(file.path(
+    "gene_counts","FPKM_Mono.tsv", header=TRUE, fill=TRUE))
 
 ## deseq2 results
 res_NE_CF0 <- readRDS(file.path("DESeq2_res","res_NE_CF0.rds"))
