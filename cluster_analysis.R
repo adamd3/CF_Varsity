@@ -1,36 +1,27 @@
-
+#!/usr/bin/env Rscript
 
 ##------------------------------------------------------------------------------
-## Load libraries + set parameters
+## Load libraries
 ##------------------------------------------------------------------------------
 library(ComplexHeatmap)
-library(colorblindr)
-library(curl)
 library(DESeq2)
-library(dplyr)
-library(EnhancedVolcano)
-library(EnsDb.Hsapiens.v86)
 library(ggplot2)
-library(ggbiplot)
-library(ggExtra)
-library(ggrepel)
-library(magrittr)
+library(NbClust)
 library(org.Hs.eg.db)
 library(plyr)
 library(RColorBrewer)
 library(readr)
-library(reshape2)
-library(Rsubread)
-library(tidyr)
+library(stringr)
 library(topGO)
 
 
+##------------------------------------------------------------------------------
+## Parameters
+##------------------------------------------------------------------------------
 workingDir <- "./"
 plotsDir <- file.path(workingDir, "plots")
-
-
 cc1 <- 12
-accentPal <- brewer.pal(8, "Accent")
+set1Pal <- brewer.pal(9, "Set1")
 
 
 ##------------------------------------------------------------------------------
@@ -62,21 +53,6 @@ topGO_enrich <- function(clu_number){
     topGOres
 }
 
-
-
-##------------------------------------------------------------------------------
-## Retrieve Gene symbols for ENSEMBL identifiers
-##------------------------------------------------------------------------------
-mart <- biomaRt::useMart("ensembl", dataset="hsapiens_gene_idsembl")
-
-ens_annot <- biomaRt::getBM(
-    attributes = c(
-        "ensembl_gene_id", "ensembl_transcript_id",
-        "chromosome_name", "external_gene_name", "gene_biotype"
-    ),  mart = mart
-)
-ens_annot <- subset(ens_annot, select = c(ensembl_gene_id, external_gene_name))
-ens_annot <- ens_annot[!duplicated(ens_annot$ensembl_gene_id),]
 
 
 
@@ -124,7 +100,6 @@ FPKM_Mono <- FPKM_Mono[
 ##------------------------------------------------------------------------------
 ## Clustering + heatmap of DEGs in Neutrophils
 ##------------------------------------------------------------------------------
-
 DE_NE_RNA_CF0 <- unique(na.omit(rownames(
     subset(res_NE_CF0, padj < 0.05 & abs(log2FoldChange) > 0.5))))
 DE_NE_RNA_CF14 <- unique(na.omit(rownames(
@@ -162,9 +137,6 @@ median_zscores_NE <- data.frame(
         FPKM_NE_zscores[,(
             samplesDf_NE$Class=="HV")])
 )
-dim(median_zscores_NE)
-# [1] 1821    4
-
 
 
 ## hierarchical clustering
@@ -175,7 +147,7 @@ hclust_genes <- hclust(
 
 
 ## choose number of clusters using C-index method
-res_nbclust <- NbClust::NbClust(
+res_nbclust <- NbClust(
     median_zscores_NE, distance = "manhattan",
     min.nc = 2, max.nc = 10, method = "ward.D2", index = "cindex"
 )
@@ -186,29 +158,16 @@ nclust <- res_nbclust$Best.nc[[1]]
 geneclusters <- cutree(hclust_genes, k = nclust)
 
 
-median_zscores_NE$Gene_cluster <- as.character(geneclusters)
-
-
-## Re-order cluster numbers so that Up/Down-regulated genes are adjacent:
-median_zscores_NE$Gene_cluster[median_zscores_NE$Gene_cluster=="4"] <- "n1"
-median_zscores_NE$Gene_cluster[median_zscores_NE$Gene_cluster=="2"] <- "n2"
-median_zscores_NE$Gene_cluster[median_zscores_NE$Gene_cluster=="3"] <- "n3"
-median_zscores_NE$Gene_cluster[median_zscores_NE$Gene_cluster=="6"] <- "n4"
-median_zscores_NE$Gene_cluster[median_zscores_NE$Gene_cluster=="7"] <- "n5"
-median_zscores_NE$Gene_cluster[median_zscores_NE$Gene_cluster=="5"] <- "n6"
-median_zscores_NE$Gene_cluster[median_zscores_NE$Gene_cluster=="8"] <- "n7"
-median_zscores_NE$Gene_cluster[median_zscores_NE$Gene_cluster=="1"] <- "n8"
-median_zscores_NE$Gene_cluster <- gsub("n","",median_zscores_NE$Gene_cluster)
-median_zscores_NE$Gene_cluster <- as.factor(median_zscores_NE$Gene_cluster)
+median_zscores_NE$Gene_cluster <- as.factor(geneclusters)
 
 
 ## Plot heatmap
 ann_colors_NE = list(
     Gene_cluster = c(
-        "1" = palette_OkabeIto_black[1], "2" = palette_OkabeIto_black[2],
-        "3" = palette_OkabeIto_black[3], "4" = palette_OkabeIto_black[4],
-        "5" = palette_OkabeIto_black[5], "6" = palette_OkabeIto_black[6],
-        "7" = palette_OkabeIto_black[7], "8" = palette_OkabeIto_black[8]
+        "1" = set1Pal[1], "2" = set1Pal[2],
+        "3" = set1Pal[3], "4" = set1Pal[4],
+        "5" = set1Pal[5], "6" = set1Pal[6],
+        "7" = set1Pal[7], "8" = set1Pal[8]
     )
 )
 
@@ -256,16 +215,11 @@ combinedRes$Cluster <- c(
 )
 combinedRes$Cluster <- as.factor(combinedRes$Cluster)
 
-clustCols = c(
-    accentPal[5], accentPal[6], accentPal[7], accentPal[8],
-    accentPal[1], accentPal[2], accentPal[3], accentPal[4]
-)
-
 
 
 ## barplot of top n terms by cluster
 topGOdf <- combinedRes
-topGOdf$Term <- stringr::str_trunc(topGOdf$Term, 40)
+topGOdf$Term <- str_trunc(topGOdf$Term, 40)
 topGOdf$Term <- factor(topGOdf$Term, levels = (topGOdf$Term))
 topGOdf$Fisher_padj <- -log10(topGOdf$Fisher_padj)
 
@@ -284,7 +238,7 @@ p1 <- ggplot(topGOdf,
     theme_bw() +
     ylab(expression("−log"[10]~"("*italic(P)~"adj."*")")) +
     coord_flip() +
-    scale_fill_manual("", values = palette_OkabeIto_black) +
+    scale_fill_manual("", values = set1Pal) +
     theme(
         legend.position="top",
         legend.title.align = 0,
@@ -311,7 +265,6 @@ ggsave(
 ##------------------------------------------------------------------------------
 ## Clustering + heatmap of DEGs in Monocytes
 ##------------------------------------------------------------------------------
-
 ## subset to DEGs:
 DE_Mono_RNA_CF0 <- unique(na.omit(rownames(
     subset(res_Mono_CF0, padj < 0.05 & abs(log2FoldChange) > 0.5))))
