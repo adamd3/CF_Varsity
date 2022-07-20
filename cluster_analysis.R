@@ -61,35 +61,13 @@ topGO_enrich <- function(clu_number){
 samplesDf_NE <- read_tsv(file.path("sample_tables","samplesDf_NE.tsv"))
 samplesDf_Mono <- read_tsv(file.path("sample_tables","samplesDf_Mono.tsv"))
 
-## read counts per gene
-gene_counts_NE <- read.table(file.path(
-    "gene_counts","gene_counts_NE.tsv"), header=TRUE, fill=TRUE)
-gene_counts_Mono <- read.table(file.path(
-    "gene_counts","gene_counts_Mono.tsv"), header=TRUE, fill=TRUE)
-
 ## FPKM values per gene
 FPKM_NE <- read.table(file.path(
     "gene_counts","FPKM_NE.tsv"), header=TRUE, fill=TRUE)
 FPKM_Mono <- read.table(file.path(
     "gene_counts","FPKM_Mono.tsv"), header=TRUE, fill=TRUE)
 
-## deseq2 results
-res_NE_CF0 <- readRDS(file.path("DESeq2_res","res_NE_CF0.rds"))
-res_NE_CF14 <- readRDS(file.path("DESeq2_res","res_NE_CF14.rds"))
-res_NE_CF30 <- readRDS(file.path("DESeq2_res","res_NE_CF30.rds"))
-res_Mono_CF0 <- readRDS(file.path("DESeq2_res","res_Mono_CF0.rds"))
-res_Mono_CF14 <- readRDS(file.path("DESeq2_res","res_Mono_CF14.rds"))
-res_Mono_CF30 <- readRDS(file.path("DESeq2_res","res_Mono_CF30.rds"))
-
-
 ## match columns in gene counts with rows in sample table
-gene_counts_NE <- gene_counts_NE[
-    , match(samplesDf_NE$Sample_ID, colnames(gene_counts_NE))
-]
-gene_counts_Mono <- gene_counts_Mono[
-    , match(samplesDf_Mono$Sample_ID, colnames(gene_counts_Mono))
-]
-
 FPKM_NE <- FPKM_NE[
     , match(samplesDf_NE$Sample_ID, colnames(FPKM_NE))
 ]
@@ -97,29 +75,20 @@ FPKM_Mono <- FPKM_Mono[
     , match(samplesDf_Mono$Sample_ID, colnames(FPKM_Mono))
 ]
 
+## deseq2 results
+res_NE_CF0 <- readRDS(file.path("DESeq2_res","res_NE_full_0.rds"))
+res_NE_CF14 <- readRDS(file.path("DESeq2_res","res_NE_full_14.rds"))
+res_NE_CF30 <- readRDS(file.path("DESeq2_res","res_NE_full_30.rds"))
+res_Mono_CF0 <- readRDS(file.path("DESeq2_res","res_Mono_full_0.rds"))
+res_Mono_CF14 <- readRDS(file.path("DESeq2_res","res_Mono_full_14.rds"))
+res_Mono_CF30 <- readRDS(file.path("DESeq2_res","res_Mono_full_30.rds"))
 
 
 ##------------------------------------------------------------------------------
 ## Clustering + heatmap of DEGs in Neutrophils
 ##------------------------------------------------------------------------------
-DE_NE_RNA_CF0 <- unique(na.omit(rownames(
-    subset(res_NE_CF0, padj < 0.05 & abs(log2FoldChange) > 0.5))))
-DE_NE_RNA_CF14 <- unique(na.omit(rownames(
-    subset(res_NE_CF14, padj < 0.05 & abs(log2FoldChange) > 0.5))))
-DE_NE_RNA_CF30 <- unique(na.omit(rownames(
-    subset(res_NE_CF30, padj < 0.05 & abs(log2FoldChange) > 0.5))))
-
-DE_NE_RNA_all <- unique(c(
-    DE_NE_RNA_CF0, DE_NE_RNA_CF14, DE_NE_RNA_CF30
-))
-
-DE_NE_RNA_all[grep("ENSG", DE_NE_RNA_all)] <- gsub(
-    "\\..*","",DE_NE_RNA_all[grep("ENSG", DE_NE_RNA_all)])
-
-FPKM_NE_sub <- subset(FPKM_NE, rownames(FPKM_NE) %in% DE_NE_RNA_all)
-
 ## calculate z-scores per gene
-FPKM_NE_zscores <- t(scale(t(as.matrix(FPKM_NE_sub))))
+FPKM_NE_zscores <- t(scale(t(as.matrix(FPKM_NE))))
 
 ## median z-score by group
 median_zscores_NE <- data.frame(
@@ -151,8 +120,9 @@ hclust_genes <- hclust(
 ## choose number of clusters using C-index method
 res_nbclust <- NbClust(
     median_zscores_NE, distance = "manhattan",
-    min.nc = 2, max.nc = 10, method = "ward.D2", index = "cindex"
+    min.nc = 2, max.nc = 10, method = "ward.D2", index = "marriot"
 )
+
 nclust <- res_nbclust$Best.nc[[1]]
 
 
@@ -207,13 +177,13 @@ combinedRes <- rbind(
     topGO_res[[1]][1:nkeep,], topGO_res[[2]][1:nkeep,],
     topGO_res[[3]][1:nkeep,], topGO_res[[4]][1:nkeep,],
     topGO_res[[5]][1:nkeep,], topGO_res[[6]][1:nkeep,],
-    topGO_res[[7]][1:nkeep,], topGO_res[[8]][1:nkeep,]
+    topGO_res[[7]][1:nkeep,]
 )
 
 
 combinedRes$Cluster <- c(
     rep("1", nkeep), rep("2", nkeep), rep("3", nkeep), rep("4", nkeep),
-    rep("5", nkeep), rep("6", nkeep), rep("7", nkeep), rep("8", nkeep)
+    rep("5", nkeep), rep("6", nkeep), rep("7", nkeep)
 )
 combinedRes$Cluster <- as.factor(combinedRes$Cluster)
 
@@ -222,20 +192,26 @@ combinedRes$Cluster <- as.factor(combinedRes$Cluster)
 ## barplot of top n terms by cluster
 topGOdf <- combinedRes
 topGOdf$Term <- str_trunc(topGOdf$Term, 40)
-topGOdf$Term <- factor(topGOdf$Term, levels = (topGOdf$Term))
+
+
+topGOdf$order <- factor(nrow(topGOdf):1)
+
+
+# topGOdf$Term <- factor(topGOdf$Term, levels = (topGOdf$Term))
 topGOdf$Fisher_padj <- -log10(topGOdf$Fisher_padj)
 
-topGOdf$Cluster <- factor(
-    topGOdf$Cluster, levels = (sort(unique(topGOdf$Cluster)))
-)
+# topGOdf$Cluster <- factor(
+#     topGOdf$Cluster, levels = (sort(unique(topGOdf$Cluster)))
+# )
 
 
 p1 <- ggplot(topGOdf,
-    aes(x = Term, y = Fisher_padj, fill = Cluster)) +
+    aes(x = order, y = Fisher_padj, fill = Cluster)) +
     geom_bar(
         position = "dodge", stat = "identity",
         width = 0.7,  colour = "black"
     ) +
+    scale_x_discrete(labels = rev(topGOdf$Term)) +
     geom_hline(yintercept=1, linetype="dashed") +
     theme_bw() +
     ylab(expression("−log"[10]~"("*italic(P)~"adj."*")")) +
@@ -267,23 +243,8 @@ ggsave(
 ##------------------------------------------------------------------------------
 ## Clustering + heatmap of DEGs in Monocytes
 ##------------------------------------------------------------------------------
-## subset to DEGs:
-DE_Mono_RNA_CF0 <- unique(na.omit(rownames(
-    subset(res_Mono_CF0, padj < 0.05 & abs(log2FoldChange) > 0.5))))
-DE_Mono_RNA_CF14 <- unique(na.omit(rownames(
-    subset(res_Mono_CF14, padj < 0.05 & abs(log2FoldChange) > 0.5))))
-DE_Mono_RNA_CF30 <- unique(na.omit(rownames(
-    subset(res_Mono_CF30, padj < 0.05 & abs(log2FoldChange) > 0.5))))
-
-DE_Mono_RNA_all <- unique(c(
-    DE_Mono_RNA_CF0, DE_Mono_RNA_CF14, DE_Mono_RNA_CF30
-))
-
-
-FPKM_Mono_sub <- subset(FPKM_Mono, rownames(FPKM_Mono) %in% DE_Mono_RNA_all)
-
 ## calculate z-scores per gene
-FPKM_Mono_zscores <- t(scale(t(as.matrix(FPKM_Mono_sub))))
+FPKM_Mono_zscores <- t(scale(t(as.matrix(FPKM_Mono))))
 
 ## median z-score by group
 median_zscores_Mono <- data.frame(
