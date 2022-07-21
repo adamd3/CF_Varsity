@@ -39,15 +39,14 @@ topGO_enrich <- function(clu_number){
         "topGOdata", ontology = "BP", allGenes = alg, nodeSize = 10,
         annot = annFUN.org, mapping = "org.Hs.eg.db", ID = "ensembl"
     )
-    resultTopGO_classic <- runTest(
-        tgd, algorithm = "classic", statistic = "Fisher")
-    topGOres <- GenTable(tgd, Fisher.classic = resultTopGO_classic,
-        orderBy = "Fisher.classic", topNodes = length(usedGO(tgd))
+    resultTopGO_weight01 <- runTest(
+        tgd, algorithm = "weight01", statistic = "Fisher")
+    topGOres <- GenTable(tgd, Fisher.weight01 = resultTopGO_weight01,
+        orderBy = "Fisher.weight01", topNodes = length(usedGO(tgd))
     )
     topGOres <- rbind.fill(topGOres)
-    topGOres$Fisher.classic <- as.numeric(topGOres$Fisher.classic)
-    topGOres$Fisher_padj <- p.adjust(topGOres$"Fisher.classic", method = "BH")
-    topGOres <- topGOres[order(as.numeric(topGOres$Fisher.classic)),]
+    topGOres$Fisher.weight01 <- as.numeric(topGOres$Fisher.weight01)
+    topGOres <- topGOres[order(as.numeric(topGOres$Fisher.weight01)),]
     topGOres
 }
 
@@ -196,17 +195,10 @@ topGOdf$Term <- str_trunc(topGOdf$Term, 40)
 
 topGOdf$order <- factor(nrow(topGOdf):1)
 
-
-# topGOdf$Term <- factor(topGOdf$Term, levels = (topGOdf$Term))
-topGOdf$Fisher_padj <- -log10(topGOdf$Fisher_padj)
-
-# topGOdf$Cluster <- factor(
-#     topGOdf$Cluster, levels = (sort(unique(topGOdf$Cluster)))
-# )
-
+topGOdf$Fisher.weight01 <- -log10(topGOdf$Fisher.weight01)
 
 p1 <- ggplot(topGOdf,
-    aes(x = order, y = Fisher_padj, fill = Cluster)) +
+    aes(x = order, y = Fisher.weight01, fill = Cluster)) +
     geom_bar(
         position = "dodge", stat = "identity",
         width = 0.7,  colour = "black"
