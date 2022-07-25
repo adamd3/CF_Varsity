@@ -1,5 +1,5 @@
 # CF_Varsity
-This repository contains used for analysis of Cystic Fibrosis Varsity project data.
+This repository contains code used for analysis of Cystic Fibrosis Varsity project data.
 
 
 ## Instructions

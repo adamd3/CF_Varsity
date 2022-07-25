@@ -116,7 +116,7 @@ hclust_genes <- hclust(
 )
 
 
-## choose number of clusters using C-index method
+## choose number of clusters 
 res_nbclust <- NbClust(
     median_zscores_NE, distance = "manhattan",
     min.nc = 2, max.nc = 10, method = "ward.D2", index = "marriot"
