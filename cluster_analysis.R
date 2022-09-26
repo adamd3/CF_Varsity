@@ -57,22 +57,12 @@ topGO_enrich <- function(clu_number){
 ## Read in data
 ##------------------------------------------------------------------------------
 ## sample tables
-samplesDf_NE <- read_tsv(file.path("sample_tables","samplesDf_NE.tsv"))
-samplesDf_Mono <- read_tsv(file.path("sample_tables","samplesDf_Mono.tsv"))
+samplesDf_NE <- readRDS(file.path("sample_tables","samplesDf_NE.rds"))
+samplesDf_Mono <- readRDS(file.path("sample_tables","samplesDf_Mono.rds"))
 
 ## FPKM values per gene
-FPKM_NE <- read.table(file.path(
-    "gene_counts","FPKM_NE.tsv"), header=TRUE, fill=TRUE)
-FPKM_Mono <- read.table(file.path(
-    "gene_counts","FPKM_Mono.tsv"), header=TRUE, fill=TRUE)
-
-## match columns in gene counts with rows in sample table
-FPKM_NE <- FPKM_NE[
-    , match(samplesDf_NE$Sample_ID, colnames(FPKM_NE))
-]
-FPKM_Mono <- FPKM_Mono[
-    , match(samplesDf_Mono$Sample_ID, colnames(FPKM_Mono))
-]
+FPKM_NE <- readRDS(file.path("gene_counts","FPKM_NE.rds"))
+FPKM_Mono <- readRDS(file.path("gene_counts","FPKM_Mono.rds"))
 
 ## deseq2 results
 res_NE_CF0 <- readRDS(file.path("DESeq2_res","res_NE_full_0.rds"))
@@ -81,6 +71,21 @@ res_NE_CF30 <- readRDS(file.path("DESeq2_res","res_NE_full_30.rds"))
 res_Mono_CF0 <- readRDS(file.path("DESeq2_res","res_Mono_full_0.rds"))
 res_Mono_CF14 <- readRDS(file.path("DESeq2_res","res_Mono_full_14.rds"))
 res_Mono_CF30 <- readRDS(file.path("DESeq2_res","res_Mono_full_30.rds"))
+
+## subset counts to significant genes
+all_DEG_NE <- unique(c(
+    rownames(subset(res_NE_CF0, padj<0.05 & abs(log2FoldChange) > 0.5)),
+    rownames(subset(res_NE_CF14, padj<0.05 & abs(log2FoldChange) > 0.5)),
+    rownames(subset(res_NE_CF30, padj<0.05 & abs(log2FoldChange) > 0.5))
+))
+all_DEG_Mono <- unique(c(
+    rownames(subset(res_Mono_CF0, padj<0.05 & abs(log2FoldChange) > 0.5)),
+    rownames(subset(res_Mono_CF14, padj<0.05 & abs(log2FoldChange) > 0.5)),
+    rownames(subset(res_Mono_CF30, padj<0.05 & abs(log2FoldChange) > 0.5))
+))
+
+FPKM_NE <- FPKM_NE[rownames(FPKM_NE) %in% all_DEG_NE,]
+FPKM_Mono <- FPKM_Mono[rownames(FPKM_Mono) %in% all_DEG_Mono,]
 
 
 ##------------------------------------------------------------------------------
@@ -116,7 +121,7 @@ hclust_genes <- hclust(
 )
 
 
-## choose number of clusters 
+## choose number of clusters
 res_nbclust <- NbClust(
     median_zscores_NE, distance = "manhattan",
     min.nc = 2, max.nc = 10, method = "ward.D2", index = "marriot"
