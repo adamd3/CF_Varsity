@@ -2,6 +2,13 @@
 This repository contains code used for analysis of Cystic Fibrosis Varsity project data.
 
 
+## Contents
+
+The repository contains the following directories:
+- `DESeq2_res` differential gene expression results from DESeq2.
+- `gene_counts` normalised gene expression matrices containing log2(FPKM) values.
+- `sample_tables` tables of sample information.
+
 ## Instructions
 
 You need to first install [`miniconda`](https://docs.conda.io/en/latest/miniconda.html).
