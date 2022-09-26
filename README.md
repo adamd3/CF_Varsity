@@ -1,6 +1,8 @@
 # CF_Varsity
-This repository contains code used for analysis of Cystic Fibrosis Varsity project data.
 
+[![DOI](https://zenodo.org/badge/513838306.svg)](https://zenodo.org/badge/latestdoi/513838306)
+
+This repository contains code used for analysis of Cystic Fibrosis Varsity project data.
 
 ## Contents
 
